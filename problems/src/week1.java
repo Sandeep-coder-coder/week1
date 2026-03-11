@@ -1,47 +1,30 @@
 import java.util.*;
 public class week1 {
-    static HashMap<String, Integer> users = new HashMap<>();
-    static HashMap<String, Integer> attempts = new HashMap<>();
-    public static boolean checkAvailability(String username) {
-        attempts.put(username, attempts.getOrDefault(username, 0) + 1);
-        return !users.containsKey(username);
+    static HashMap<String, Integer> inventory = new HashMap<>();
+    static HashMap<String, LinkedHashMap<Integer, Integer>> waitingList = new HashMap<>();
+    public static int checkStock(String productId) {
+        return inventory.getOrDefault(productId, 0);
     }
-    public static List<String> suggestAlternatives(String username) {
-        List<String> suggestions = new ArrayList<>();
-        for (int i = 1; i <= 3; i++) {
-            String name = username + i;
-            if (!users.containsKey(name)) {
-                suggestions.add(name);
-            }
+    public static synchronized String purchaseItem(String productId, int userId) {
+        int stock = inventory.getOrDefault(productId, 0);
+
+        if (stock > 0) {
+            inventory.put(productId, stock - 1);
+            return "Success, " + (stock - 1) + " units remaining";
         }
-        String alt = username.replace("_", ".");
-        if (!users.containsKey(alt)) {
-            suggestions.add(alt);
-        }
-        return suggestions;
-    }
-    public static String getMostAttempted() {
-        String maxUser = "";
-        int max = 0;
-        for (Map.Entry<String, Integer> e : attempts.entrySet()) {
-            if (e.getValue() > max) {
-                max = e.getValue();
-                maxUser = e.getKey();
-            }
-        }
-        return maxUser + " (" + max + " attempts)";
+        waitingList.putIfAbsent(productId, new LinkedHashMap<>());
+        LinkedHashMap<Integer, Integer> list = waitingList.get(productId);
+        int position = list.size() + 1;
+        list.put(userId, position);
+        return "Added to waiting list, position #" + position;
     }
     public static void main(String[] args) {
+        inventory.put("IPHONE15_256GB", 100);
+        System.out.println("Stock: " + checkStock("IPHONE15_256GB"));
+        System.out.println(purchaseItem("IPHONE15_256GB", 12345));
+        System.out.println(purchaseItem("IPHONE15_256GB", 67890));
+        inventory.put("IPHONE15_256GB", 0);
 
-        users.put("john_doe", 1);
-        users.put("admin", 2);
-
-        System.out.println(checkAvailability("john_doe"));
-        System.out.println(checkAvailability("jane_smith"));
-
-        System.out.println(suggestAlternatives("john_doe"));
-        checkAvailability("admin");
-        checkAvailability("admin");
-        System.out.println(getMostAttempted());
+        System.out.println(purchaseItem("IPHONE15_256GB", 99999));
     }
 }
