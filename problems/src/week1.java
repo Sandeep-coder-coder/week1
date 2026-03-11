@@ -1,53 +1,38 @@
 import java.util.*;
 public class week1 {
-    static HashMap<String, Set<String>> ngramIndex = new HashMap<>();
-    static int N = 3;
-    public static List<String> getNgrams(String text) {
-        String[] words = text.split(" ");
-        List<String> ngrams = new ArrayList<>();
-        for (int i = 0; i <= words.length - N; i++) {
-            String gram = "";
-            for (int j = 0; j < N; j++) {
-                gram += words[i + j] + " ";
-            }
-            ngrams.add(gram.trim());
-        }
-        return ngrams;
+    static HashMap<String,Integer> pageViews=new HashMap<>();
+    static HashMap<String,Set<String>> uniqueVisitors=new HashMap<>();
+    static HashMap<String,Integer> trafficSources=new HashMap<>();
+    public static void processEvent(String url,String userId,String source){
+        pageViews.put(url,pageViews.getOrDefault(url,0)+1);
+        uniqueVisitors.putIfAbsent(url,new HashSet<>());
+        uniqueVisitors.get(url).add(userId);
+        trafficSources.put(source,trafficSources.getOrDefault(source,0)+1);
     }
-    public static void addDocument(String docId, String text) {
-        List<String> ngrams = getNgrams(text);
-        for (String gram : ngrams) {
-            ngramIndex.putIfAbsent(gram, new HashSet<>());
-            ngramIndex.get(gram).add(docId);
+    public static void getDashboard(){
+        List<Map.Entry<String,Integer>> pages=new ArrayList<>(pageViews.entrySet());
+        pages.sort((a,b)->b.getValue()-a.getValue());
+        System.out.println("Top Pages:");
+        for(int i=0;i<Math.min(10,pages.size());i++){
+            String url=pages.get(i).getKey();
+            int views=pages.get(i).getValue();
+            int unique=uniqueVisitors.get(url).size();
+            System.out.println((i+1)+". "+url+" - "+views+" views ("+unique+" unique)");
         }
-    }
-    public static void analyzeDocument(String docId, String text) {
-        List<String> ngrams = getNgrams(text);
-        HashMap<String, Integer> matchCount = new HashMap<>();
-        for (String gram : ngrams) {
-            if (ngramIndex.containsKey(gram)) {
-                for (String doc : ngramIndex.get(gram)) {
-                    if (!doc.equals(docId)) {
-                        matchCount.put(doc, matchCount.getOrDefault(doc, 0) + 1);
-                    }
-                }
-            }
-        }
-        System.out.println("Extracted " + ngrams.size() + " n-grams");
-        for (String doc : matchCount.keySet()) {
-            int matches = matchCount.get(doc);
-            double similarity = (matches * 100.0) / ngrams.size();
-            System.out.println("Found " + matches + " matching n-grams with " + doc);
-            System.out.println("Similarity: " + similarity + "%");
-            if (similarity > 50) {
-                System.out.println("PLAGIARISM DETECTED");
-            }
+        System.out.println("Traffic Sources:");
+        int total=0;
+        for(int c:trafficSources.values())total+=c;
+        for(String s:trafficSources.keySet()){
+            double percent=(trafficSources.get(s)*100.0)/total;
+            System.out.println(s+": "+percent+"%");
         }
     }
-    public static void main(String[] args) {
-        String essay1 = "data structures and algorithms are important for computer science";
-        String essay2 = "data structures and algorithms are very important in programming";
-        addDocument("essay_089.txt", essay1);
-        analyzeDocument("essay_123.txt", essay2);
+    public static void main(String[] args){
+        processEvent("/article/breaking-news","user123","google");
+        processEvent("/article/breaking-news","user456","facebook");
+        processEvent("/sports/championship","user789","direct");
+        processEvent("/sports/championship","user123","google");
+        processEvent("/article/breaking-news","user999","google");
+        getDashboard();
     }
 }
